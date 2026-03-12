@@ -1,0 +1,10 @@
+---
+title: "File System Analysis"
+revealOptions:
+  background-color: 'aquamarine'
+  transition: 'none'
+  slideNumber: true
+  autoAnimateDuration: 0.0
+---
+
+!INCLUDE "file-system-analysis.md"

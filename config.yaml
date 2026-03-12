@@ -1,0 +1,113 @@
+stages:
+  - make_assets
+  - embed_reveal
+  - docusaurus
+
+build_dir: /build
+output_type: last
+output_dir: /output
+
+make_assets:
+  plugin: command
+  options:
+    command: make
+    locations:
+      - chapters/digital-forensics-fundamentals/evidence-acquisition/slides
+      - chapters/digital-forensics-fundamentals/file-system-analysis/slides
+      - chapters/digital-forensics-fundamentals/memory-forensics/slides
+      # - chapters/digital-forensics-fundamentals/overview/slides
+      - chapters/network-and-log-forensics/network-traffic-analysis/slides
+      - chapters/network-and-log-forensics/log-analysis/slides
+      # - chapters/network-and-log-forensics/overview/slides
+    args:
+      - all
+
+embed_reveal:
+  plugin: reveal_embed
+  options:
+    target: docusaurus
+    extension: mdx
+    build:
+      evidence-acquisition: evidence-acquisition
+      file-system-analysis: file-system-analysis
+      memory-forensics: memory-forensics
+      network-traffic-analysis: network-traffic-analysis
+      log-analysis: log-analysis
+
+docusaurus:
+  plugin: docusaurus
+  options:
+    course_name: Forensics Security
+    sidebar: js
+    structure:
+      - Digital Forensics Fundamentals:
+          - Overview: chapters/digital-forensics-fundamentals/overview/README.md
+          - Evidence Acquisition:
+              path: chapters/digital-forensics-fundamentals/evidence-acquisition/
+              extra:
+                - media/
+              subsections:
+                - Reading:
+                    path: reading/
+                    subsections:
+                      - Introduction: README.md
+                - Slides: /build/embed_reveal/evidence-acquisition
+          - File System Analysis:
+              path: chapters/digital-forensics-fundamentals/file-system-analysis/
+              extra:
+                - media/
+              subsections:
+                - Reading:
+                    path: reading/
+                    subsections:
+                      - Introduction: README.md
+                - Slides: /build/embed_reveal/file-system-analysis
+          - Memory Forensics:
+              path: chapters/digital-forensics-fundamentals/memory-forensics/
+              extra:
+                - media/
+              subsections:
+                - Reading:
+                    path: reading/
+                    subsections:
+                      - Introduction: README.md
+                - Slides: /build/embed_reveal/memory-forensics
+      - Network and Log Forensics:
+          - Overview: chapters/network-and-log-forensics/overview/README.md
+          - Network Traffic Analysis:
+              path: chapters/network-and-log-forensics/network-traffic-analysis/
+              extra:
+                - media/
+              subsections:
+                - Reading:
+                    path: reading/
+                    subsections:
+                      - Introduction: README.md
+                - Slides: /build/embed_reveal/network-traffic-analysis
+          - Log Analysis:
+              path: chapters/network-and-log-forensics/log-analysis/
+              extra:
+                - media/
+              subsections:
+                - Reading:
+                    path: reading/
+                    subsections:
+                      - Introduction: README.md
+                - Slides: /build/embed_reveal/log-analysis
+
+    static_assets:
+      - evidence-acquisition: /build/make_assets/chapters/digital-forensics-fundamentals/evidence-acquisition/slides/_site
+      - file-system-analysis: /build/make_assets/chapters/digital-forensics-fundamentals/file-system-analysis/slides/_site
+      - memory-forensics: /build/make_assets/chapters/digital-forensics-fundamentals/memory-forensics/slides/_site
+      - network-traffic-analysis: /build/make_assets/chapters/network-and-log-forensics/network-traffic-analysis/slides/_site
+      - log-analysis: /build/make_assets/chapters/network-and-log-forensics/log-analysis/slides/_site
+    config_meta:
+      title: Forensics Security
+      url: http://localhost/
+      baseUrl: /forensics-security/
+      onBrokenLinks: warn
+      onBrokenMarkdownLinks: warn
+    config_socials:
+      OCW: https://security.cs.pub.ro/summer-school/wiki/
+      Facebook: https://www.facebook.com/SSSUPB/
+    copyright_string: SSS Team
