@@ -7,10 +7,6 @@ revealOptions:
   autoAnimateDuration: 0.0
 ---
 
-!INCLUDE "intro.md"
-
----
-
 !INCLUDE "content.md"
 
 ---

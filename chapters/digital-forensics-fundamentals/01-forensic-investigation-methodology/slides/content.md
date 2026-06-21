@@ -1,43 +1,119 @@
-## Slides hierarchy
+# FORENSIC INVESTIGATION METHODOLOGY
 
 ---
 
-## Slides Hierarchy
-
-* Slides are organized in two levels
-    * We use `---` in order to open up a new topic.
-       This leads to a new horizontal slide figuring a topic that can be expanded by vertical slides.
-    * We expand discussions on the same topic by vertical slides.
-       We use `----`, which adds a new vertical slide
-
-----
-
-### New Vertical Slide
-
-* This slide illustrates a new item of discussion on the matter of the slides hierarchy
+## WHAT IS DIGITAL FORENSICS?
 
 ---
 
-### Animated Slides
+## WHERE DO WE COLLECT ARTIFACTS FROM?
 
-* You can even animate slides like this
+---
 
-``` [1 - 2 | 3 - 4]
-student@os:~/.../compute/lecture/demo/create-process$ strace -e clone ./fork_exec
-clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7f7e83aa4810) = 5302
-student@os:~/.../compute/lecture/demo/create-thread$ strace -e clone ./create_thread
-clone(child_stack=0x7f9ea7df0fb0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, tls=0x7f9ea7df1700, child_tidptr=0x7f9ea7df19d0) = 5389
+## WHY IS A DIGITAL INVESTIGATOR CALLED IN?
+
+---
+
+## 10 STEP INVESTIGATION METHOGOLOGY
+
+![METHODOLOGY](../media/fim.png)
+
+---
+
+## Triage vs Full investigation
+
+---
+
+## DFIR
+
+---
+
+## DFIR
+![DFIR](media/dfir.png)
+
+---
+
+## PHASES OF THE DIGITAL FORENSIC PROCESS (ISO/IEC)
+
+``` [1 - 4 | 5 - 9]
+* identification
+* collection
+* acquisition
+* preservation
+
+# The following phases are part of the forensic process
+# though not included in the ISO/IEC standards:
+* analysis
+* reporting
 ```
 
 ---
 
-### Tables
+## Locard's principle of exchange
 
-You can include tables:
+"Every contact leaves a trace"
 
-| Advantages                       | Disadvantages                              |
-| :------------------------------: | :----------------------------------------: |
-| implemented by libraries         | implemented by the kernel                  |
-| blocking actions stall process   | blocking actions only stall current thread |
-| more mapped on one kernel thread | provide support for user level threads     |
-| Java, Python                     | Linux KThreads, Windows threads            |
+---
+
+## WHAT TYPES OF EVIDENCE?
+
+---
+
+## IOCs
+
+---
+
+## IOCs
+
+* atomic
+* computed
+* behavioural
+
+---
+
+## PYRAMID OF PAIN
+
+![PoP](../media/pop.png)
+
+---
+
+## DIAMOND MODEL
+
+![DIAMOND](../media/diamondmodel.png)
+
+---
+## LYNX RANSOMWARE
+
+![LYNX](../media/diamond01lynx.png)
+
+---
+## LUNAR SPIDER
+
+![LUNAR SPIDER](../media/diamond01lunar.png)
+
+---
+## INVESTIGATOR'S CHALLENGES
+
+- extracting data from damaged devices
+- locating evidence among vast quantities of data
+- ensuring that their methods capture data **reliably**, without altering it in any way
+
+---
+## CHAIN OF CUSTODY
+
+![COC](../media/coc.jpg)
+
+---
+## SUMMARY
+
+``` [1 | 2 | 3 | 4 | 5 | 6 | 7]
+digital forensics includes retrieving, storing and analyzing data
+DFIR includes incident response, out of scope for this track
+phases: identify, collect, acquire, preserve, analyze, report
+evidence sources: disk, memory, network
+DFIR case reports provide examples
+challenges: extraction, large amounts of data, reliability
+chain of custody is a priority
+```
+---
+## QUESTIONS
