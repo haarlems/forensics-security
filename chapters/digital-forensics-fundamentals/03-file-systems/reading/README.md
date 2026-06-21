@@ -266,7 +266,6 @@ If an attacker uses a timestomping tool, they modify $STANDARD_INFORMATION only,
 - NTFS stores per-file metadata in the $MFT, supports alternate data streams, commonly abused to hide payloads
 - FAT is simple and widely used on removable media
 - APFS is the default for Apple devices
-- deleted file recovery: use fls to find deallocated inodes, istat to confirm data blocks are intact, icat to extract content
 - file carving: recovers data from unallocated space when metadata is gone
 - timestomping manipulates MACB timestamps to make timeline analysis harder but it is still detectable
 
