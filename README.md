@@ -1,15 +1,16 @@
-# Forensics Security
+# Forensics 
 
-These are open educational resources ([OER](https://en.wikipedia.org/wiki/Open_educational_resources)).
-The repository should be used as a template for the your own classes.
+This is the Forensics Track of the Security Summer School.
 
 ## Using the Content
 
-TODO
+There are 2 chapters: digital-forensics-fundamentals and investigation.
 
 ## Chapter Contents
 
-TODO
+Each chapter has multiple lessons.
+
+Each lesson has a reading material and associated challenges for that lesson in the drills directory.
 
 ## Contributing
 
