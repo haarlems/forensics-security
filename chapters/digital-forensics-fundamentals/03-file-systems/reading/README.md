@@ -109,8 +109,6 @@ When a file is deleted in EXT4, the operating system does not overwrite or delet
 It only marks the inode as free and removes the directory entry that mapped the filename to that inode.<br />
 The data blocks themselves are marked as available, but their contents remain on disk until the OS overwrites them with new data.
 
-That is why file recovery is possible: if the inode has not been reallocated and the data blocks not overwritten, we can recover both the metadata and the file contents.
-
 **Unallocated space** means the filesystem deems those blocks free to be written, not necessarily empty.
 
 **Slack space** means the space left after a file has been allocated.<br />
@@ -143,7 +141,18 @@ _image source: `ntfs.com`_
 
 - an NTFS volume starts with the Partition Boot Sector (**$Boot** metadata file), beginning at sector 0 and can be up to 16 sectors<br />
 - `$Boot` describes NTFS volume information (bytes per sector, sectors per cluster, etc) and the location of the $MFT
+
+``` powershell
+Line	Tag	Entry Point	Signature	Bytes Per Sector	Sectors Per Cluster	Cluster Size	Reserved Sectors	Total Sectors	Mft Cluster Block Number	Mft Mirr Cluster Block Number	Mft Entry Size	Index Entry Size	
+1	Unchecked	0xEB 0x52 0x90	NTFS    	512	8	4096	0	132157439	786432	2	1024	4096 [..]
+```
+
 - `$MFT` is the main metadata file, each file in the NTFS volume is represented by a record in this table
+
+``` powershell
+Line	Tag	Entry Number	Sequence Number	Parent Entry Number	Parent Sequence Number	In Use	Parent Path	File Name	Extension	Is Directory	Has Ads	Is Ads	File Size	Created0x10	Created0x30	Last Modified0x10	Last Modified0x30	Last Record Change0x10	Last Record Change0x30	Last Access0x10	Last Access0x30	Zone Id Contents
+182845	Unchecked	151957	6	171992	2	Checked	.\$Recycle.Bin\S-1-5-21-3757327896-2532397730-150904874-1001	$IHVBCBC.exe	.exe	Unchecked	Unchecked	Unchecked	98	2026-06-12 12:35:56		2026-06-12 12:35:56		2026-06-12 12:35:56		2026-06-23 12:55:21	2026-06-12 12:35:56	[..]
+```
 
 ![$MFT](../media/mft.png)<br />
 _image source: `ntfs.com`_
@@ -159,7 +168,51 @@ NTFS supports multiple data streams:
 - a stream name identifies a new data attribute on the file
 - a handle can be opened to each data stream
 
-Example: `file.dat:stream2` <br />
+``` powershell
+# we create a file and check its content and size
+PS C:\Users\test1> echo "totallynormalbytes" > normal.txt
+PS C:\Users\test1> cat .\normal.txt
+totallynormalbytes
+PS C:\Users\test1> ls .\normal.txt
+    Directory: C:\Users\test1
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         6/24/2026   9:52 AM             42 normal.txt
+# we create an alternate data stream and check the content and size
+# they are the same as before, the ads isn't accounted for
+PS C:\Users\test1> Set-Content .\normal.txt -Stream secretstream -Value "badbytes"
+PS C:\Users\test1> cat .\normal.txt
+totallynormalbytes
+PS C:\Users\test1> ls .\normal.txt
+    Directory: C:\Users\test1
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         6/24/2026   9:52 AM             42 normal.txt
+# we can access the ads directly
+PS C:\Users\test1> cat .\normal.txt:secretstream
+badbytes
+# or by listing all streams
+PS C:\Users\test1> Get-Item .\normal.txt -Stream *
+PSPath        : Microsoft.PowerShell.Core\FileSystem::C:\Users\test1\normal.txt::$DATA
+PSParentPath  : Microsoft.PowerShell.Core\FileSystem::C:\Users\test1
+PSChildName   : normal.txt::$DATA
+PSDrive       : C
+PSProvider    : Microsoft.PowerShell.Core\FileSystem
+PSIsContainer : False
+FileName      : C:\Users\test1\normal.txt
+Stream        : :$DATA
+Length        : 42
+
+PSPath        : Microsoft.PowerShell.Core\FileSystem::C:\Users\test1\normal.txt:secretstream
+PSParentPath  : Microsoft.PowerShell.Core\FileSystem::C:\Users\test1
+PSChildName   : normal.txt:secretstream
+PSDrive       : C
+PSProvider    : Microsoft.PowerShell.Core\FileSystem
+PSIsContainer : False
+FileName      : C:\Users\test1\normal.txt
+Stream        : secretstream
+Length        : 10
+```
 
 Attackers commonly abuse Alternate Data Streams to [hide artifacts](https://attack.mitre.org/techniques/T1564/004/), like data or payloads, in file metadata instead of file data.
 
@@ -218,7 +271,7 @@ Extracts the contents of a file by inode number.<br />
 
 ![icat](../media/icat.png)
 
-Used together, `fls` identifies deleted files by inode, `istat` confirms the inode is still allocated on disk, and `icat` recovers the contents.
+Used together, `fls` identifies files by inode, `istat` confirms the inode is still allocated on disk, and `icat` shows the contents.
 
 ## File carving
 
@@ -271,13 +324,15 @@ If an attacker uses a timestomping tool, they modify $STANDARD_INFORMATION only,
 
 ## Drills
 
-### Challenge 1
+### snack
 
-Description
+We recovered a small block of disk.
+What's it hiding?
 
-### Challenge 2
+### time-is-relative
 
-Description
+It seems this threat actor tried to blend in with the file system.
+But what what the real file creation time?
 
 ### Challenge 3
 
