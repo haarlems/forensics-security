@@ -1,7 +1,8 @@
 
 # snack
 
-We recovered a small block of disk. What's it hiding?
+We recovered a small block of disk.
+What's it hiding?
 
 Artifacts:
 `snack.bin`
