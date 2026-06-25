@@ -331,7 +331,7 @@ What's it hiding?
 
 ### time-is-relative
 
-It seems this threat actor tried to blend in with the file system.
+It seems this threat actor tried to cleanup his tracks.
 But what what the real file creation time?
 
 ### Challenge 3
