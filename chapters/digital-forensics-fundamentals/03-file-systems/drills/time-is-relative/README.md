@@ -1,16 +1,14 @@
 
 # time-is-relative
 
-It seems this threat actor tried to cleanup his tracks.
+It seems this threat actor dropped something new, trying to blend in with the system.
 But what what the real file creation time?
 
+The flag format is SSS{yyyy-MM-dd-hh:mm:ss}
+
 Artifacts:
-`targets.zip`
+`time-is-relative.zip`
 
-Hint 1:
-there is a master timekeeper you are seeking.
-
-Hint 2:
-watch out for snakes.
+Hint 1: it's a totally new payload.
 
 Solution in `../solution/`

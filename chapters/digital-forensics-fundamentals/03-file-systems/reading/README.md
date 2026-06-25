@@ -331,12 +331,16 @@ What's it hiding?
 
 ### time-is-relative
 
-It seems this threat actor tried to cleanup his tracks.
+It seems this threat actor dropped something new, trying to blend in with the system.
 But what what the real file creation time?
 
-### Challenge 3
+The flag format is SSS{yyyy-MM-dd-hh:mm:ss}
 
-Description
+### unc
+
+We know the victim downloaded something, but what domain did the attacker deliver the payload from?
+
+The flag format is SSS{domainname.tld}
 
 ## Further reading
 
