@@ -1,7 +1,7 @@
 # Disk Analysis
 
 After data has been extracted and measures taken to maintain integrity, we focus on initial event analysis. <br />
-Early triage can offer indication of the type of incident investigated (ransomware, insider threat, cryptojacking, etc), based on which we look for obvious IoCs.
+Early triage can offer indication of the type of incident investigated (ransomware, insider threat, etc), based on which we look for obvious IoCs.
 
 At this stage:
 
@@ -182,32 +182,7 @@ $ journalctl --directory uac/\[root\]/var/log/journal/ --utc _UID=0 -o verbose
 
 ### Evidence of past file presence
 
-```
-# fls -d shows deleted entries still recorded
-# -r recursive, -d deleted
-# image.dd is a full disk image, so we have to find the partition layout and pass the partition offset to TSK tools
-$ mmls image.dd
-[..]
-GUID Partition Table (EFI)
-Offset Sector: 0
-Units are in 512-byte sectors
-      Slot      Start        End          Length       Description
-000:  Meta      0000000000   0000000000   0000000001   Safety Table
-001:  -------   0000000000   0000002047   0000002048   Unallocated
-002:  Meta      0000000001   0000000001   0000000001   GPT Header
-003:  Meta      0000000002   0000000033   0000000032   Partition Table
-004:  000       0000002048   0000004095   0000002048
-005:  001       0000004096   0041940991   0041936896
-006:  -------   0041940992   0041943039   0000002048   Unallocated
-$ fls -r -d -o 4096 image.dd
-r/r * 662713(realloc):  tmp/.hidden/notmalware.sh
-r/r * 662782(realloc):  home/sss/notmalware
-[..]
-
-# icat recovers content by inode number
-# only works if the data blocks have not been overwritten
-$ icat image.dd 662782 > recovered_notmalware
-
+``` bash
 # dpkg.log shows package manager logs with timestamps
 # look for packages used for post exploitation that may have been installed and removed
 $ grep 'install\|remove' uac/\[root\]/var/log/dpkg.log
@@ -230,12 +205,11 @@ End-Date: 2026-06-11  17:42:31
 - format varies widely (starts with timestamp, hostname, process name, pid, and the rest is left to the developers)
 - collected by UAC with the ir_triage profile
 
-```
+``` bash
 # syslog is the primary logging service
 # we filter for kernel module load events
 # we look for modules loaded outside of package management or at unusual times
-$ grep -i 'module\|insmod\|modprobe' /var/log/syslog
-### TODO ADD DIAMORPHINE
+$ grep -iE 'module|insmod|modprobe' /var/log/syslog
 
 # check user logins and system reboots from wtmp
 # also btmp records failed logins, but it is not enabled by default
@@ -244,12 +218,6 @@ sss      pts/2        fe80::a60a:b442: Tue Jun  9 19:42    gone - no logout
 sss      pts/0        fe80::a60a:b442: Tue Jun  9 16:47 - 19:36  (02:49)
 reboot   system boot  0.0.0.0          Tue Jun  9 15:43   still running
 [..]
-
-# check last login per user from lastlog
-$ last -if uac/\[root\]/var/log/lastlog
-Username         Port     From                             Latest
-root             pts/1    192.168.1.15                     Tue Jun 10 16:55:02 +0000 2026
-sss              pts/0    fe80::a60a:b442:fc61:8a15%ens33  Thu Jun 11 20:33:24 +0300 2026
 
 # check web server logs
 # they often show initial access
@@ -413,7 +381,7 @@ We parse prefetch files with `PECmd.exe` and output to csv.
 
 We analyze the 2 csv outputs with Timeline Explorer from EZ Tools.
 
-```
+``` powershell
 # timeline, one row per run time
 Run Time	Executable Name
 2026-06-08 07:46:33	\VOLUME{01da3ed381705ea1-ca817eba}\USERS\TEST1\DOWNLOADS\ANYDESK.EXE
@@ -651,11 +619,6 @@ The USN Journal `Extend$UsnJrnl:J` is a change log with every create, delete, re
 It fills the gaps the `$MFT` leaves, which shows the current state of a file, while the USN Journal shows the sequence of changes.
 Parsed with `MFTECmd.exe`, pointed at the $J stream.
 
-**Windows Search Index**
-
-The Windows Search Index (`Windows.edb`, an ESE database) stores filenames, properties and sometimes content.
-It can show evidence of deleted files and requires an ESE database parser, like [sidr](https://github.com/strozfriedberg/sidr).
-
 **System Resource Usage Monitor**
 
 SRUM (`C:\Windows\System32\sru\SRUDB.dat`, also ESE) stores per application resource usage, including bytes sent and received, cpu time, and the user that ran it.
@@ -720,24 +683,58 @@ Note it can be slow, some artifact formats may not be parsed. For in depth work,
 
 ## Drills
 
-### Challenge 1
+### weak-on-figs
 
-Description
+What initial backdoor did the adversary plant on the beachhead user?
 
-### Challenge 2
+The flag format is `SSS{/full/path/to/file}`
 
-Description
+### deuces
 
-### Challenge 3
+What file does the adversary consistently delete to cleanup her tracks?
 
-Description
+The flag format is `SSS{/full/path/to/file}`
+
+### regulars
+
+Some more questions arise from the same set of given artifacts, see if you can find evidence to answer them all.
+
+1. What executable did the attacker run to establish persistence?
+
+The flag format is `SSS{full/path/to/executable}`
+
+2. What was the full cmdline they used?
+
+The flag format is `SSS{full -cmdline here}`
+
+3. What secondary persistence is established by the backdoor user?
+
+The flag format is `SSS{/full/path/to/executable}`
+
+4. What time was the secondary persistence planted by the backdoor user?
+
+The flag format is `SSS{yyyy-MM-dd-hh:mm:ss}`
+
+5. What is the first backdoor user the attacker logged in with and what shell does it use?
+
+The flag format is `SSS{/home/fullusername:/full/path/to/this/user's/shell/}`
+
+6. What time did the attacker first log in as the backdoor user?
+
+The flag format is `SSS{yyyy-MM-dd-hh:mm}`
+
+7. What other users did the attacker try to login with?
+
+The flag format is `SSS{fullusername}`
 
 ## Further reading
 
+[+] [Body file](https://wiki.sleuthkit.org/Body-file/)<br />
+[+] [Body file more detailed](https://forensics.wiki/body_file/)<br />
+[+] [Body file with stat and find](https://trustedsec.com/blog/incident-response-bring-out-the-body-file)<br />
 [+] [Windows Registry Forensics](https://www.cybertriage.com/blog/windows-registry-forensics-cheat-sheet-2025/)<br />
 [+] [Windows Event IDs](https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/) <br />
-[+] [Body file](https://wiki.sleuthkit.org/index.php?title=Body_file)<br />
-[+] [AmCache](https://www.thedfirspot.com/post/evidence-of-program-existence-amcache)
+[+] [AmCache](https://www.thedfirspot.com/post/evidence-of-program-existence-amcache)<br />
 [+] [$LogFile](https://forensafe.com/blogs/windowslogfile.html)<br />
 [+] [Forensic Timelines](https://www.thedfirspot.com/post/from-chaos-to-chronology-the-power-of-forensic-timelines)<br />
 [+] [You don't know jack about bash history](https://www.youtube.com/watch?v=wv1xqOV2RyE)<br />
