@@ -3,8 +3,6 @@
 A wealth of evidence resides in the random access memory (RAM) of the analyzed system, which can be used to correlate with other evidence, such as network or disk activity.<br />
 When the system is shutdown, the memory data is lost.
 
-The memory image used in this class: [TODO](TODO)
-
 The main focus of memory analysis is finding malicious processes or executables to extract and examine further.
 
 ## Prerequisites
@@ -78,70 +76,106 @@ We will use Volatility3, and resort to Volatility2 only in case of missing funct
 
 ### General information
 
-`python3 vol.py -f memory.dmp windows.info` # display memory image information
+``` bash
+# we scan for windows os and image metadata
+$ python3 vol.py -f win.dmp windows.info 
 
-`python3 vol.py -f unix.dmp banners` # attempt to identify unix kernel version details
+# we scan for unix kernel version details
+$ python3 vol.py -f unix.dmp banners 
+```
 
-- to analyze a Linux or macOS RAM capture with Volatility3 you must to use appropriate kernel debugging information
-- collection of [symbol](https://github.com/Abyss-W4tcher/volatility3-symbols) tables
-- if you cannot find an appropriate symbol table for your kernel version, you can also [create one](https://volatility3.readthedocs.io/en/latest/symbol-tables.html#mac-or-linux-symbol-tables) manually
+To analyze a Linux or macOS RAM capture with Volatility3 you must to use appropriate kernel debugging information.
 
-### Process information
+We find a collection of [symbol](https://github.com/Abyss-W4tcher/volatility3-symbols) tables.
 
-`python3 vol.py -f memory.dmp windows.psscan` # list all processes
+If you cannot find an appropriate symbol table for your kernel version, you can also [create one](https://volatility3.readthedocs.io/en/latest/symbol-tables.html#mac-or-linux-symbol-tables) manually.
 
-`python3 vol.py -f unix.dmp linux.pslist.PsList` # list all processes
+``` bash
+# download the matching debug kernel vmlinux with dwarf
+# example ubuntu
+$ sudo apt install linux-image-6.17.0-35-generic-dbgsym
+# convert with dwarf2json
+$ git clone https://github.com/volatilityfoundation/dwarf2json.git
+$ cd dwarf2json && go build
+$ ./dwarf2json linux --elf /usr/lib/debug/boot/vmlinux-6.17.0-35-generic > 6.17.0-35-generic.json
+# xz the json and move to volatility symbols directory
+$ xz 6.17.0-35-generic.json
+$ mv 6.17.0-35-generic.json.xz ~/venv/lib/python3.9/site-packages/volatility3/symbols
+```
 
-`python3 vol.py -f memory.dmp windows.pstree` # list process tree
+### Linux
 
-`python3 vol.py -f unix.dmp linux.pstree.PsTree` # list process tree
+``` bash
+# list all processes linked list
+python3 vol.py -f unix.dmp linux.pslist
+OFFSET (V)      PID     TID     PPID    COMM    UID     GID     EUID    EGID    CREATION TIME   File output
+0x898d00a2a9c0  1       1       0       systemd 0       0       0       0       -       Disabled
+[..]
+# scan memory for process structures
+python3 vol.py -f unix.dmp linux.psscan
+# show process tree
+python3 vol.py -f unix.dmp linux.pstree
+OFFSET (V)      PID     TID     PPID    COMM
+0x898d00a2a9c0  1       1       0       systemd
+* 0x898d061d0000        370     370     1       systemd-journal
+* 0x898d23ce5380        861     861     1       avahi-daemon
+** 0x898d25f28000       919     919     861     avahi-daemon
+[..]
+# show processes with command-line args
+python3 vol.py -f unix.dmp linux.psaux
+PID     PPID    COMM    ARGS
+1       0       systemd /sbin/init splash
+2       0       kthreadd        [kthreadd]
+3       2       pool_workqueue_ [pool_workqueue_]
+[..]
+# list open files per process
+python3 vol.py -f unix.dmp linux.lsof
+# inspect network connections
+python3 vol.py -f unix.dmp linux.netscan
+# inspect netfilter hooks
+python3 vol.py -f unix.dmp linux.netfilter
+# show command history
+python3 vol.py -f unix.dmp linux.bash
+# scan for suspicious memory regions
+python3 vol.py -f unix.dmp linux.malfind
+# scan with yara rules
+python3 vol.py -f unix.dmp linux.vmayarascan.VmaYaraScan --yara-file=rule.yar
+```
 
-`python3 vol.py -f unix.dmp linux.psaux.PsAux` # list processes with command-line args
+### Windows
 
-`python3 vol.py -f memory.dmp windows.dlllist --pid 1337` # list dlls loaded by PID
-
-`python3 vol.py -f unix.dmp linux.lsof.Lsof` # list open files per process
-
-`python3 vol.py -f memory.dmp windows.memmap` # list all memory mapped regions
-
-`python3 vol.py -f memory.dmp windows.handles --pid 1337` # list handles opened by PID
-
-### Network information
-
-`python3 vol.py -f memory.dmp windows.netscan` # scan for network objects
-
-`python3 vol.py -f unix.dmp linux.netfilter.Netfilter` # inspect netfilter hooks
-
-### Command history
-
-`python3 vol.py -f memory.dmp windows.cmdline` # show command history
-
-`python3 vol.py -f unix.dmp linux.bash.Bash` # show command history
-
-### Malfind
-
-`python3 vol.py -f memory.dmp windows.malfind` # scan for rogue activity
-
-`python3 vol.py -f unix.dmp linux.malfind.Malfind` # scan for suspicious memory regions
-
-### Scan for specific objects
-
-`python3 vol.py -f memory.dmp windows.registry.hivelist` # list registry hives mapped in memory, based on OS structures
-
-`python3 vol.py -f memory.dmp windows.registry.hivescan` # scan raw memory for registry hives
-
-- based on hive signatures
-- can find hives not loaded in OS structures, or corrupted hives
-
-### Extract files
-
-`python3 vol.py -f memory.dmp windows.dumpfiles --pid 1337 -o ~/outputpid1337/` # extract files from process memory
-
-### Memory scan with YARA
-
-`python3 vol.py -f memory.dmp windows.yarascan --yara-file=rule.yar`
-
-`python3 vol.py -f unix.dmp linux.vmayarascan.VmaYaraScan --yara-file=rule.yar`
+``` bash
+# list all processes linked list
+python3 vol.py -f win.dmp windows.pslist
+# scan for all EPROCESS structures
+python3 vol.py -f win.dmp windows.psscan
+# show process tree
+python3 vol.py -f win.dmp windows.pstree
+# show cross view of process listings
+python3 vol.py -f win.dmp windows.psxview
+# list dlls loaded by PID
+python3 vol.py -f win.dmp windows.dlllist --pid 1337
+# extract all memory mapped regions
+python3 vol.py -f win.dmp windows.memmap --pid 1337 --dump
+# list handles opened by PID
+python3 vol.py -f win.dmp windows.handles --pid 1337
+# scan for network objects
+python3 vol.py -f win.dmp windows.netscan
+# show command history
+python3 vol.py -f win.dmp windows.cmdline
+# scan for rogue activity
+python3 vol.py -f win.dmp windows.malfind
+# list registry hives mapped in memory, based on OS structures
+python3 vol.py -f win.dmp windows.registry.hivelist
+# scan raw memory for registry hives
+# based on hive signatures
+# can find hives not loaded in OS structures, or corrupted hives
+python3 vol.py -f win.dmp windows.registry.hivescan 
+# extract files from process memory
+python3 vol.py -f memory.dmp windows.dumpfiles --pid 1337 -o ~/outputpid1337/ 
+# scan with YARA rules
+python3 vol.py -f memory.dmp windows.yarascan --yara-file=rule.yar
+```
 
 ## Strings
 
@@ -158,21 +192,22 @@ See `man strings` for other encoding options.
 
 ## Summary
 
-- summary
+- we use `volatility` to analyze the memory dumps
+- unix memory dumps require a symbols table for `volatility` to read them
+- we look for suspicious processes, running from unexpected locations
+- we check for network connections
+- we look for the any commands from the shell history
+- we dump the files and investigate further
 
 ## Drills
 
-### Challenge 1
+### untitled
 
-Description
+During a routine audit, a new local account was found on this workstation with no justification for its creation. The system was flagged for unusual activity and a memory capture tas taken. Find the flag.
 
-### Challenge 2
+### plainsight
 
-Description
-
-### Challenge 3
-
-Description
+We collected this memory dump, see if you can make sense of it.
 
 ## Further reading
 
