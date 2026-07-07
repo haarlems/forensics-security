@@ -1,0 +1,10 @@
+---
+title: "Network Traffic Analysis"
+revealOptions:
+  background-color: 'aquamarine'
+  transition: 'none'
+  slideNumber: true
+  autoAnimateDuration: 0.0
+---
+
+!INCLUDE "network-traffic-analysis.md"
