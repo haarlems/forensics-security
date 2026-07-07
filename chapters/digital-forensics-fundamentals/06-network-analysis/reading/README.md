@@ -40,7 +40,7 @@ Logs can be reviewed manually, filtered, or correlated in a SIEM (Security Infor
 Given the amount of evidence, aggregating logs in a SIEM helps gain situational awareness faster.
 
 Full packet captures are one of the best sources of evidence, but also one difficult to keep due to the storage cost.
-Depending on regulations or internal practices, enterprise environments may keep 1 month worth of rolling pcaps, paired with 3-6-12 months of zeek logs, for example.
+Depending on regulations or internal practices, enterprise environments may keep 1 month worth of rolling pcaps, paired with 3-6-12 months of netflow or zeek logs, for example.
 
 ## Network protocols
 
@@ -56,23 +56,42 @@ During a breach, the same network protocols seen in normal network activity are 
 
 ## Tcpdump, Tshark and Wireshark
 
-Extract all packets with either src or dest 192.168.1.111 and src or dest port 443<br />
-`tcpdump -nnr evidence.pcap host 192.168.1.111 and port 443 -w evidence-https-192.168.1.111.pcap`<br />
-`-nn` no hostname resolution, no port resolution (sometimes another protocol than HTTPS passes through port 443)<br />
-`-r` read from a pcap file (not live traffic)<br />
-`-w` write to file<br />
+Extract all packets with either src or dest 192.168.1.111 and src or dest port 443
 
-Extract unique URIs<br />
-`tshark -nnr evidence-https-192.168.1.111.pcap -Y 'http and http.user_agent' -T fields -E separator='|' -e 'ip.src' -e 'http.request.uri' | sort | uniq -c | wc -l`<br />
-`-Y` display dilter to use<br />
-`-T` changes the output format to specific fields only<br />
-`-e` exact fields to display<br />
+``` bash
+# -nn no hostname resolution, no port resolution (sometimes another protocol than HTTPS passes through port 443)
+# -r read from a pcap file (not live traffic)
+# -w write to file
+tcpdump -nnr evidence.pcap host 192.168.1.111 and port 443 -w evidence-https-192.168.1.111.pcap`
+```
 
-Extract unique `User-Agent` fields<br />
-`tshark -nnr evidence-https-192.168.1.111.pcap -Y 'http and http.user_agent' -T fields -e 'http.user_agent' | uniq -c`<br />
+Extract unique URI per ip
 
-Extract unique `URI`<br />
-`tshark -nnr evidence-https-192.168.1.111.pcap -Y 'http and http.user_agent' -T fields -E separator='|' -e 'http.request.uri' -e 'ip.src' -e 'http.host' | sort | uniq -c | wc -l`<br />
+``` bash
+# -Y display filter to use
+# -T changes the output format to specific fields only
+# -e exact fields to display
+tshark -nnr evidence-https-192.168.1.111.pcap -Y 'http and http.user_agent' -T fields -E separator='|' -e 'ip.src' -e 'http.request.uri' | sort | uniq -c
+  6 192.168.1.52|/connecttest.txt
+[..]
+```
+
+Extract unique `User-Agent` fields
+
+``` bash
+tshark -nnr evidence-https-192.168.1.111.pcap -Y 'http and http.user_agent' -T fields -e 'http.user_agent' | uniq -c
+  1 Microsoft-Delivery-Optimization/10.1
+  12 Microsoft NCSI
+  3 Windows-Update-Agent/1407.2506.11012.0 Client-Protocol/2.90
+```
+
+Extract count of unique combinations of `URI`, source IP and host
+
+``` bash
+# we check how many unique combos exist for a specific IP
+tshark -nnr evidence-https-192.168.1.111.pcap -Y 'http and http.user_agent' -T fields -E separator='|' -e 'ip.src' -e 'http.host' -e 'http.request.uri' | sort | uniq -c | wc -l
+8
+```
 
 ### Wireshark
 
@@ -125,75 +144,62 @@ A 1GB pcap may result in 200MB worth of zeek logs, depending on on the actual tr
   - contains protocol anomalies, malformed packets
   - helps identify non-standard protocol abuse
 
-Run zeek: <br />
-`zeek -Cr evidence.pcap`<br />
-`-C` to disable checksum verification (depending on where the packet capture is performed)<br />
-`-r` to read from a pcap file and output the logs generated
+``` bash
+# we run zeek
+# -C to disable checksum verification (depending on where the packet capture is performed)
+# -r to read from a pcap file and output the logs generated
+zeek -Cr evidence.pcap
 
-Check logs: <br />
-`cat conn.log | less -S`<br />
-`cat dns.log | less -S`<br />
-`-S` to not wrap long lines in less<br />
 
-Check http logs for specific information:<br />
-`cat http.log | zeek-cut id.orig_h id.resp_h method host uri status_code referrer user_agent | less -S`<br />
-`zeek-cut` to extract the specific fields we are interested in<br />
+# we check the logs
+# -S to not wrap long lines
+cat conn.log | less -S
+cat dns.log | less -S
 
-Extract data from logs (JSON) with jq:<br />
-`jq '[."id.orig_h",."id.resp_h",."query",."qtype_name"]' dns.log`<br />
+# we check http logs for specific information
+# we zeek-cut to extract the specific fields we are interested in
+cat http.log | zeek-cut id.orig_h id.resp_h method host uri status_code referrer user_agent | less -S
+
+# we extract data from logs (JSON) with jq
+jq '[."id.orig_h",."id.resp_h",."query",."qtype_name"]' dns.log
+```
 
 ## Real Intelligence Threat Analytics (RITA)
 
 - command-line tool that analyzes network behaviour
 - can process large 24h packet captures
-- takes in zeek logs, imports them into a database (we chose to name it investigation)
-  - `rita import *.log investigation`
-- flags beaconing patterns, long connections
-  - `rita show-beacons investigation`
-- identify, list and sort connections with unusually high durations
-  - `rita show-long-connections investigation`
-- unusually high unique subdomain queries
-  - `rita show-exploded-dns investigation`
-- ranked list of unique user agent strings
-  - `rita show-useragents`
+- takes in zeek logs, imports them into a database
+
+``` bash
+# we check the rita databases
+# -h for help
+rita show-databases
+# we import the logs into a new database named investigation
+rita import *.log investigation
+# we check for beaconing patterns
+# the closer the value to 1, the more it resembles beaconing
+rita show-beacons investigation
+# we identify, list and sort connections with unusually high durations
+rita show-long-connections investigation | head
+# we check for beacons sni (Server Name Indication)
+# should be a FQDN, not an IP
+rita show-beacons-sni investigation
+# we list unique user agent strings
+rita show-useragents investigation
+# we check for unusually high unique subdomain queries
+rita show-exploded-dns investigation
+```
 
 ## Arkime
 
-- to examine large network packet captures
+- to examine large packet captures
+- metadata indexed by Elastic
+- payload data can be searched via Hunts which use Opensearch
 - organized by sessions
-
-## Identify C2 patterns
-
-- the act of a compromised system (client) checking in with the server for any commands is often referred to as **beaconing**
-- if no commands received from the server, the client goes to sleep a set amount of time, called **sleep** time
-- sleep time can vary a set % called **jitter** (ex. sleep 10s with jitter 20% -> sleep can be anything between 8-12s)
-- beaconing creates regular traffic patterns that can be identified when looking at behaviour over a time range (ex. 24h)
-
-Protocols used for C2 communication:
-
-- HTTP/HTTPS = the most common, blends in with normal traffic that flows in an enterprise environment
-- DNS = commonly used but suspicious traffic can be identified (abnormally large number of requests to the same domain, abusing [TXT, CNAME, NS, MX](https://www.activecountermeasures.com/a-network-threat-hunters-guide-to-dns-records/) records)
-- ICMP = not very common as it's immediately suspicious to see large amounts of ICMP requests to remote hosts
-- SMB = used to pivot peer-to-peer in windows environments, does not cross external network boundaries
-
-With an additional layer of abstraction, C2s can also be achieved via applications, like the Google suite (Calendar, Drive, etc.), Discord, Velociraptor and many others, but they are outside the scope of this class.
-
-## Identify initial access
-
-- identify connections to exposed services (VPN, SSH, RDP, HTTP/HTTPS)
-- DNS requests to unusual domains
-- connections not preceded by a DNS query, regular users rarely ever access a resource directly by IP
-- unusual inbound connections, high volume of failed logins
-- unexpected protocol versions or sequence anomalies
-- http status manipulation where 4xx errors still deliver payloads
-  - `cat http.log | zeek-cut method host uri user_agent status_code response_body_len`
-
-## Identify data exfiltration
-
-- large volumes of bytes seen outbound to suspicious destinations in zeek logs or packet captures
-- outbound HTTP/S `POST` requests with large payloads or to unusual URLs
-- unusual FTP/FTP usage
-- unauthorized cloud storage uploads
+- we look for outliers
+  - filter for protocols
+  - filter for unique destination hosts
+  - filter by ja4
 
 ## Summary
 
@@ -205,23 +211,27 @@ With an additional layer of abstraction, C2s can also be achieved via applicatio
 
 ## Drills
 
-### Challenge 1
+### thor
 
-Description
+Seems like this is the doing of an agent of chaos.
+See if you can shed some light.
 
-### Challenge 2
+### future
 
-Description
+I did not expect a bot from the future.
 
-### Challenge 3
+### thief
 
-Description
+Oh no, something was stolen.
 
 ## Further reading
 
+[+] [OSI, the internet that wasn't](https://spectrum.ieee.org/osi-the-internet-that-wasnt)<br />
 [+] [Open source SIEM - Wazuh](https://github.com/wazuh/wazuh)<br />
 [+] [Wireshark - The Main window](https://www.wireshark.org/docs/wsug_html_chunked/ChUseMainWindowSection.html)<br />
 [+] [Zeek](https://github.com/zeek/zeek)<br />
 [+] [RITA](https://github.com/activecm/rita)<br />
 [+] [A Network Threat Hunter’s Guide to DNS Records](https://www.activecountermeasures.com/a-network-threat-hunters-guide-to-dns-records/)<br />
 [+] [Detecting DNS C2](https://www.activecountermeasures.com/malware-of-the-day-encrypted-dns-comparison-detecting-c2-when-you-cant-see-the-queries/)<br />
+[+] [RFC 792: ICMP](https://datatracker.ietf.org/doc/html/rfc792)<br />
+[+] [JA4 Fingerprinting](https://blog.foxio.io/ja4%2B-network-fingerprinting)<br />
