@@ -78,7 +78,6 @@ _NOTE: the MITRE ATT&CK Matrix is to be taken as a mere frame of reference._
 - http status manipulation where 4xx errors still deliver payloads
   - `cat http.log | zeek-cut method host uri user_agent status_code response_body_len`
 
-
 ## Execution
 
 - [user execution](https://attack.mitre.org/techniques/T1204/)
@@ -122,25 +121,19 @@ The [KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) database
 
 ## Summary
 
-- initial access frequently phishing, stolen credentials to exposed remote services
-- execution frequently user execution via social engineering
+- initial access exploitation, stolen credentials to exposed remote services, phishing
+- execution frequently involves user execution via social engineering
 - investigate in memory, on disk and network capture looking for specific indicators
 
-### Challenge 1
+### red
 
-Description
-
-### Challenge 2
-
-Description
-
-### Challenge 3
-
-Description
+Something weird was happening on this machine, sift through the triage artifacts to find what happened.
 
 ## Further reading
 
+[+] [Kill chain](https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html)<br />
 [+] [MITRE ATT&CK Matrix](https://attack.mitre.org/)<br />
+[+] [Malware families](https://malpedia.caad.fkie.fraunhofer.de/families)<br />
 [+] [Threat actor groups](https://attack.mitre.org/groups/)<br />
 [+] [OWASP Top 10](https://owasp.org/Top10/2025/)<br />
 [+] [Known Exploited Vulnerabilities](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)<br />
